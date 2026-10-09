@@ -28,6 +28,9 @@ jobs:
       - name: Disable Forge usage analytics prompt
         run: forge settings set usage-analytics false
 
+      - name: Verify Forge credentials
+        run: forge whoami
+
       - name: Install dependencies
         run: |
           npm install
