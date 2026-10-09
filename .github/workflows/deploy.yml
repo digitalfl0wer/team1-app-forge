@@ -2,7 +2,7 @@ name: Deploy to Forge
 
 on:
   push:
-    branches: [main]
+    branches: [main, alan/forge-backend-setup] # TODO: remove branch before merging
   workflow_dispatch:
 
 concurrency:
