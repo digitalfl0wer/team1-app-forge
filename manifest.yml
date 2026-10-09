@@ -1,0 +1,29 @@
+modules:
+  jira:globalPage:
+    - key: gridiron-survivor-global-page
+      resource: main
+      render: native
+      resolver:
+        function: resolver
+      title: ForgeDemo
+      icon: resource:icons;icon.svg
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend/index.tsx
+  - key: frame
+    path: src/frame/build
+    tunnel:
+      port: 3000
+  - key: icons
+    path: icons
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/c1e2f41e-db6b-4da5-949f-7705462388b5
+permissions:
+  scopes: []
