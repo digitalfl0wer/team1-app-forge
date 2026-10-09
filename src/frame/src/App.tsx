@@ -11,6 +11,7 @@ const App: React.FC = () => {
     <div>
       <h1>GridIron Survivor</h1>
       <h2>Team 1</h2>
+      <h3>Testing deployment</h3>
     </div>
   );
 };
