@@ -34,3 +34,4 @@ layer of the app.
 
 Alan's AI ideas: ticket time estimation, assignee suggestions, PR risk
 classification.
+## Connection test
