@@ -7,9 +7,23 @@ modules:
         function: resolver
       title: ForgeDemo
       icon: resource:icons;icon.svg
+  scheduledTrigger:
+    - key: run-schema-migration-trigger
+      function: runSchemaMigration
+      interval: hour
+  webtrigger:
+    - key: run-schema-migration-webtrigger
+      function: runSchemaMigration
+      response:
+        type: dynamic
   function:
     - key: resolver
       handler: index.handler
+    - key: runSchemaMigration
+      handler: index.runSchemaMigration
+  sql:
+    - key: main
+      engine: mysql
 resources:
   - key: main
     path: src/frontend/index.tsx

@@ -55,3 +55,4 @@ Thumbs.db
 build/
 
 .forge/
+.container-service-assets/
