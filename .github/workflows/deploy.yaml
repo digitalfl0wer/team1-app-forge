@@ -29,9 +29,7 @@ jobs:
         run: forge settings set usage-analytics false
 
       - name: Install dependencies
-        run: |
-          npm ci
-          npm ci --prefix src/frame
+        run: npm ci
 
-      - name: Build frame and deploy
-        run: npm run deploy -- --non-interactive -e development
+      - name: Deploy to Forge
+        run: forge deploy --non-interactive -e development
