@@ -1,0 +1,20 @@
+modules:
+  jira:globalPage:
+    - key: todo-list-hello-world-global-page
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: Todo-list
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/aaa0d6d7-d093-4ef6-b07f-deaa154cb0ad
