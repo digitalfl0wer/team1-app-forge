@@ -23,7 +23,7 @@
     "@forge/bridge": "7.2.0-next.8",
     "@forge/react": "12.3.1-next.3",
     "@forge/resolver": "2.0.1-next.0",
-    "@forge/sql": "^4.0.7",
+    "@forge/sql": "^4.0.8",
     "react": "^18.2.0"
   },
   "allowScripts": {
