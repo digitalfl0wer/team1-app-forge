@@ -1,5 +1,6 @@
 modules:
   jira:globalPage:
+<<<<<<< HEAD
     - key: gridiron-survivor-global-page
       resource: main
       render: native
@@ -33,11 +34,29 @@ resources:
       port: 3000
   - key: icons
     path: icons
+=======
+    - key: todo-list-hello-world-global-page
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: Todo-list
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+>>>>>>> main
 app:
   runtime:
     name: nodejs24.x
     memoryMB: 256
     architecture: arm64
+<<<<<<< HEAD
   id: ari:cloud:ecosystem::app/c1e2f41e-db6b-4da5-949f-7705462388b5
 permissions:
   scopes: []
+=======
+  id: ari:cloud:ecosystem::app/aaa0d6d7-d093-4ef6-b07f-deaa154cb0ad
+>>>>>>> main

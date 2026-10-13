@@ -1,13 +1,19 @@
 {
+<<<<<<< HEAD
   "name": "global-ui-typescript",
   "title": "Global UI",
   "description": "Forge TypeScript app template for the global:ui module.",
   "link": "https://developer.atlassian.com/platform/forge/",
   "version": "1.0.10-next.4",
+=======
+  "name": "jira-global-page-ui-kit",
+  "version": "1.1.51-next.9",
+>>>>>>> main
   "main": "index.js",
   "license": "MIT",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "build": "tsc",
     "build:frame": "npm --prefix src/frame run build",
     "watch:frame": "npm --prefix src/frame run watch",
@@ -26,6 +32,18 @@
     "@forge/react": "12.3.1-next.0",
     "@forge/resolver": "2.0.0",
     "@forge/sql": "^4.0.7",
+=======
+    "lint": "eslint src/**/*"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  },
+  "dependencies": {
+    "@forge/bridge": "7.2.0-next.8",
+    "@forge/react": "12.3.1-next.3",
+    "@forge/resolver": "2.0.1-next.0",
+>>>>>>> main
     "react": "^18.2.0"
   }
 }
