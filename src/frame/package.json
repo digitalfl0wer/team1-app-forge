@@ -27,6 +27,7 @@
   "scripts": {
     "dev": "vite",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build",
-    "watch": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --watch"
+    "watch": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --watch",
+    "type-check": "tsc --noEmit"
   }
 }

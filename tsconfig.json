@@ -20,12 +20,11 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  // Forge lint type-checks this CRA webpack file against the root tsconfig.
   "include": [
     "src/frontend/**/*",
     "src/resolvers/**/*",
     "src/index.ts",
-    "src/frame/config-overrides.js"
+    "src/sql/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

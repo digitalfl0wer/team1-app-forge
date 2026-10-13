@@ -1,0 +1,162 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--ds-surface, #fff);
+    color: var(--ds-text, #172b4d);
+}
+
+.todo-app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    color: var(--ds-text, #172b4d);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.todo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.todo-header h1 {
+    margin: 0 0 4px;
+    font-size: 28px;
+}
+
+.todo-header p {
+    margin: 0;
+    color: var(--ds-text-subtle, #626f86);
+}
+
+.add-todo {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.add-todo input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--ds-border-input, #8590a2);
+    border-radius: 4px;
+    font-size: 16px;
+    background: var(--ds-background-input, #fff);
+    color: var(--ds-text, #172b4d);
+}
+
+button {
+    border: 0;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.primary-button {
+    background: var(--ds-background-brand-bold, #0c66e4);
+    color: var(--ds-text-inverse, white);
+}
+
+.secondary-button {
+    background: var(--ds-background-neutral, #091e420f);
+    color: var(--ds-text, #172b4d);
+}
+
+.todo-section {
+    margin-top: 16px;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.section-heading h2 {
+    margin: 0;
+}
+
+.section-heading span {
+    color: var(--ds-text-subtle, #626f86);
+    font-size: 14px;
+}
+
+.todo-list {
+    display: grid;
+    gap: 10px;
+}
+
+.todo-item {
+    padding: 16px;
+    border: 1px solid var(--ds-border, #dcdfe4);
+    border-radius: 8px;
+    background: var(--ds-surface, white);
+}
+
+.todo-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+}
+
+.todo-content p {
+    margin: 0;
+}
+
+.todo-item small {
+    display: block;
+    margin-top: 8px;
+    color: var(--ds-text-subtle, #626f86);
+}
+
+.status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--ds-background-neutral, #091e420f);
+    font-size: 12px;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+.empty-state {
+    padding: 32px;
+    text-align: center;
+    border: 1px dashed var(--ds-border, #dcdfe4);
+    border-radius: 8px;
+}
+
+.empty-state h3,
+.empty-state p {
+    margin: 4px;
+}
+
+.error-message {
+    color: var(--ds-text-danger, #ae2a19);
+}
+/* Visible keyboard focus and wrapping keep the demo usable in narrow Frames. */
+button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--ds-border-focused, #388bff);
+    outline-offset: 2px;
+}
+.todo-content p { overflow-wrap: anywhere; }
+label { display: block; margin-bottom: 8px; }
+@media (max-width: 480px) {
+    .todo-app { padding: 20px 16px; }
+    .add-todo { flex-direction: column; }
+    .todo-content { align-items: flex-start; }
+}

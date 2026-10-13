@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install Forge CLI
         run: npm install -g @forge/cli
@@ -30,6 +30,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Frame dependencies
+        run: npm --prefix src/frame ci
+
+      - name: Build Frame
+        run: npm run build:frame
 
       - name: Deploy to Forge
         run: forge deploy --non-interactive -e development
