@@ -1,1 +1,3 @@
-export { handler } from './resolvers';
+export { handler } from "./resolvers";
+
+export { runSchemaMigration } from "./sql/migration";

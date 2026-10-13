@@ -6,9 +6,23 @@ modules:
         function: resolver
       render: native
       title: Todo-list
+  scheduledTrigger:
+    - key: run-schema-migration-trigger
+      function: runSchemaMigration
+      interval: hour
+  webtrigger:
+    - key: run-schema-migration-webtrigger
+      function: runSchemaMigration
+      response:
+        type: dynamic
+  sql:
+    - key: main
+      engine: mysql
   function:
     - key: resolver
       handler: index.handler
+    - key: runSchemaMigration
+      handler: index.runSchemaMigration
 resources:
   - key: main
     path: src/frontend/index.jsx
