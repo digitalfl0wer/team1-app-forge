@@ -73,8 +73,11 @@ export function buildRequestBody(opts: ChatCompletionOptions): Record<string, un
     model: opts.model,
     messages: opts.messages,
     max_completion_tokens: opts.maxCompletionTokens,
-    temperature: opts.temperature ?? 0,
   };
+  // `provider.require_parameters` below routes only to providers that support EVERY parameter we send, and some
+  // models (for example openai/gpt-6-luna) do not support temperature, which makes OpenRouter answer 404.
+  // So temperature is sent only when explicitly requested and never together with a strict schema.
+  if (opts.temperature !== undefined && !opts.responseFormat) body.temperature = opts.temperature;
   if (opts.responseFormat) {
     body.response_format = {
       type: 'json_schema',

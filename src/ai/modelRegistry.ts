@@ -63,7 +63,8 @@ const REGISTRY: readonly RegistryModel[] = [
       contextLength: null,
       inputModalities: ['text', 'image'],
       outputModalities: ['text'],
-      supportedParameters: ['max_tokens', 'temperature', 'response_format', 'structured_outputs'],
+      // Matches the live list: openai/gpt-6-luna does NOT support temperature.
+      supportedParameters: ['max_tokens', 'max_completion_tokens', 'response_format', 'structured_outputs', 'reasoning'],
     }),
   },
   {

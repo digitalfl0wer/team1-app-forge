@@ -37,7 +37,7 @@ describe('classifyTask', () => {
     expect(chat).toHaveBeenCalledTimes(1);
     const o = chat.mock.calls[0][0];
     expect(o.model).toBe('openai/gpt-6-luna');
-    expect(o.temperature).toBe(0);
+    expect(o.temperature).toBeUndefined(); // luna does not support temperature; require_parameters would 404
     expect(o.maxCompletionTokens).toBe(300);
     expect(o.retries).toBe(1);
     expect(o.responseFormat?.schema).toEqual(buildClassificationJsonSchema());

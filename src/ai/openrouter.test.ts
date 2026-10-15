@@ -75,16 +75,22 @@ describe('request building', () => {
       model: 'm',
       messages,
       maxCompletionTokens: 300,
-      temperature: 0,
       responseFormat: { name: 'n', schema: { type: 'object' } },
     });
+    expect(body).not.toHaveProperty('temperature');
     expect(body).toMatchObject({
       model: 'm',
       max_completion_tokens: 300,
-      temperature: 0,
       response_format: { type: 'json_schema', json_schema: { name: 'n', strict: true, schema: { type: 'object' } } },
       provider: { require_parameters: true },
     });
+  });
+
+  it('never sends temperature with a strict schema, only when asked and without one', () => {
+    const schema = { name: 'n', schema: { type: 'object' } };
+    expect(buildRequestBody({ model: 'm', messages, maxCompletionTokens: 5, temperature: 0, responseFormat: schema })).not.toHaveProperty('temperature');
+    expect(buildRequestBody({ model: 'm', messages, maxCompletionTokens: 5 })).not.toHaveProperty('temperature');
+    expect(buildRequestBody({ model: 'm', messages, maxCompletionTokens: 5, temperature: 0 })).toMatchObject({ temperature: 0 });
   });
 
   it('omits response_format and provider when no schema', () => {

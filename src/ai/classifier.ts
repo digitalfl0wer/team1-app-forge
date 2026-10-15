@@ -111,7 +111,6 @@ export async function classifyTask(
         model: router.id,
         messages,
         maxCompletionTokens: 300,
-        temperature: 0,
         responseFormat: { name: 'task_classification', schema },
         retries: 1,
       });
