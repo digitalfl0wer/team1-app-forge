@@ -29,6 +29,15 @@ describe('migrations', () => {
       expect(all).toMatch(new RegExp(`ALTER TABLE Todos ADD COLUMN ${col} `));
     }
   });
+  it('appends v006 AiRuns and v007 ModelCatalogCache after v005', () => {
+    const names = MIGRATIONS.map(([n]) => n);
+    expect(names.slice(5)).toEqual(['v006_create_ai_runs', 'v007_create_model_catalog_cache']);
+    const byName = new Map(MIGRATIONS);
+    expect(byName.get('v006_create_ai_runs')).toMatch(/CREATE TABLE IF NOT EXISTS AiRuns[\s\S]*run_id BIGINT PRIMARY KEY AUTO_RANDOM[\s\S]*INDEX idx_airruns_todo \(todo_id\)/);
+    expect(byName.get('v007_create_model_catalog_cache')).toMatch(
+      /ModelCatalogCache \(\s*id VARCHAR\(20\) PRIMARY KEY,\s*payload MEDIUMTEXT NOT NULL,\s*fetched_at TIMESTAMP NOT NULL/,
+    );
+  });
   it('runSchemaMigration returns 200', async () => {
     expect((await runSchemaMigration()).statusCode).toBe(200);
   });
