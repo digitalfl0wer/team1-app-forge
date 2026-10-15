@@ -47,7 +47,7 @@ Current approved registry:
 | Speech/audio (V2, disabled in V1) | `elevenlabs/eleven-v4-turbo` |
 | Video (V2, disabled in V1) | `google/veo-3.1-lite` |
 
-Note: the registry is now 11 entries, with `openai/gpt-6-luna-decisions` disabled.
+Note: the registry (`src/ai/modelRegistry.ts`) has 11 entries. Enabled in V1: `openai/gpt-6-luna`, `meta-llama/llama-guard-4-12b`, and the five text workers. Disabled: `openai/gpt-6-luna-decisions`, `google/gemini-3.1-flash-image`, `elevenlabs/eleven-v4-turbo`, `google/veo-3.1-lite`.
 
 Exact availability and volatile metadata must be checked from OpenRouter rather than assumed from this document.
 
@@ -84,12 +84,14 @@ The registry must distinguish executor types.
 
 Suggested application-level executor types:
 
-- decisions
+- decisions (kept in the list for completeness; the registry code uses `router` for the classifier role)
 - guard
 - text
 - image
 - audio
 - video
+
+The only `decisions`-type model, `openai/gpt-6-luna-decisions`, is disabled (`enabled: false`) and not used in V1. The router role is filled by `openai/gpt-6-luna`.
 
 Not all OpenRouter models use the same endpoint or lifecycle.
 

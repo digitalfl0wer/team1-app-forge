@@ -76,7 +76,7 @@ Creating a Todo:
 
 - saves the task
 - does not call OpenRouter
-- sets AI state to not_started
+- sets `ai_state` to `not_started`
 
 The existing description column should remain the short task text for V1 to avoid an unnecessary destructive rename.
 
@@ -87,15 +87,15 @@ A user can:
 - view all Todos
 - open an individual Todo
 - view its current status
-- view AI status
+- view AI state (`ai_state`)
 - view prior AI runs
 
 ### Update
 
 A user can update:
 
-- task text
-- longer task details
+- task text (`description`)
+- longer task details (`notes`)
 - status
 
 Supported Todo statuses:
@@ -105,7 +105,7 @@ Supported Todo statuses:
 - in_progress
 - done
 
-Changing task text or task details invalidates a stale AI recommendation.
+Changing task text or notes bumps `content_version`, resets `ai_state` to `not_started`, and marks any run awaiting confirmation as `stale`, which invalidates a stale AI recommendation.
 
 Changing status alone must not trigger AI analysis.
 
@@ -129,10 +129,10 @@ Each Todo should provide an ellipsis menu with:
 Opening a Todo should provide a detail view containing:
 
 - task text
-- longer description/details
+- notes (longer details)
 - status
 - attachment area **(V2)**
-- AI status
+- AI state
 - Start Task button
 - model recommendation
 - pricing/capability details
@@ -198,7 +198,9 @@ Initial primary categories:
 - automation_tool_use
 - general
 
-The classifier output must be validated at runtime.
+The classifier output must be validated at runtime (zod schema in `src/ai/types.ts`).
+
+Invalid classifier output: retry once; if it is still invalid, the run ends with status `needs_clarification` (the user picks a category). Confidence below 0.6 also ends as `needs_clarification`. The application never escalates to a more expensive model to compensate.
 
 The classifier cannot authorize arbitrary model IDs.
 
@@ -298,7 +300,7 @@ Purpose:
 - classification
 - routing
 - requirement detection
-- confidence-based decisions
+- reporting classification confidence (low confidence asks the user; it never escalates)
 
 Important implementation note: this is a normal chat model called through the standard chat-completions path with structured outputs (`response_format` of type `json_schema`, `strict: true`, `provider.require_parameters: true`).
 
@@ -512,50 +514,19 @@ Keep the existing Todo ID, short task text, status, and created timestamp.
 
 Add fields through new versioned migrations rather than modifying an already-applied migration.
 
-Suggested additional Todo fields:
+Todo columns added by migrations `v002` to `v005` (landed), exactly as defined in `docs/ai/api-contract.md` ("Schema migrations" and the `Todo` type): `notes`, `ai_state`, `content_version`, `updated_at`. Statuses are `todo`, `up_next`, `in_progress`, `done`.
 
-- details
-- updated_at
-- ai_status
-- category
-- subcategory
-- routing_confidence
-- routing_reason
-- recommended_model_id
-- selected_model_id
+AI states (`Todo.ai_state`): `not_started`, `classifying`, `awaiting_confirmation`, `running`, `succeeded`, `failed`. Per-run statuses (`classifying`, `awaiting_confirmation`, `running`, `succeeded`, `failed`, `stale`, `needs_clarification`, `blocked_by_guard`, `no_eligible_model`) live on the `AiRuns` row; see the contract for how `ai_state` mirrors the latest run.
 
-Suggested AI states:
-
-- not_started
-- analyzing
-- recommendation_ready
-- awaiting_confirmation
-- running
-- completed
-- analysis_failed
-- execution_failed
-- cancelled
-
-(The authoritative field and state names are in `docs/ai/api-contract.md`.)
+Older names from earlier drafts of this PRD (not used): a single `details` column (now `notes`), `ai_status`, and the states `analyzing`, `recommendation_ready`, `completed`, `analysis_failed`, `execution_failed`, `cancelled`. Per-Todo category, routing and model-selection fields are not Todo columns; they live on the run.
 
 ### AiRuns table
 
-Use a separate table for execution history.
+Use a separate table for execution history: `AiRuns`, migration `v006_create_ai_runs`. The column list is defined in `docs/ai/api-contract.md` ("`v006_create_ai_runs`") and is not repeated here.
 
-Suggested fields:
+### ModelCatalogCache table
 
-- run_id
-- todo_id
-- model_id
-- executor_type
-- status
-- text_response
-- input_tokens
-- output_tokens
-- total_cost
-- error_code
-- error_message
-- created_at
+Live OpenRouter model metadata is cached in the SQL table `ModelCatalogCache`, migration `v007` (see `docs/ai/api-contract.md`, "Behaviour rules"). It is not Forge storage.
 
 Do not overwrite previous runs when the user runs a task again.
 
@@ -593,11 +564,16 @@ Existing:
 Add or extend as appropriate:
 
 - updateTodo
+- setTodoStatus
 - deleteTodo
-- routeTodo
-- getModelRecommendations
-- executeTodo
-- getTodoRuns
+- startTask (guard, classify, route; returns the recommendation)
+- chooseCategory (user picks a category for a `needs_clarification` run)
+- confirmRun (explicit confirmation, then execution)
+- getAiRuns (run history)
+- getModels
+- refreshModels
+
+Payloads and return shapes are defined only in `docs/ai/api-contract.md`. (Older draft names `routeTodo`, `getModelRecommendations`, `executeTodo` and `getTodoRuns` are not used.)
 
 Potential attachment/artifact resolvers may be added when media storage is implemented (V2).
 
@@ -700,7 +676,7 @@ Defines how deterministic application code selects among eligible models.
 May include only what is relevant to the current operation:
 
 - current Todo task text
-- current Todo details
+- current Todo notes
 - explicitly attached files (V2)
 - current model metadata
 - confirmed model choice
@@ -729,7 +705,7 @@ AI failures must degrade gracefully.
 Handle at minimum:
 
 - classification failure
-- invalid classifier result
+- invalid classifier result (retry once, then `needs_clarification`)
 - OpenRouter timeout
 - provider unavailable
 - model unavailable
@@ -739,13 +715,15 @@ Handle at minimum:
 - malformed model response
 - safety rejection
 - execution failure
-- cancelled request
+- cancelled request (no cancelled state exists in V1; see `docs/ai/api-contract.md`)
 
 Examples of human-readable messages:
 
 Classification failure:
 
 > We couldn't analyze this task right now. Your task is safe. Try again when you're ready.
+
+(Used for provider failures during classification. Invalid or low-confidence classifier output is not a failure state: the run is `needs_clarification` and the user picks a category.)
 
 No eligible model:
 
@@ -799,7 +777,7 @@ Potential future additions:
 - Budget / Balanced / Maximum Quality user preferences
 - automatic routing eval suite
 - compare multiple models on the same task
-- confidence-based escalation
+- confidence-based escalation: intentionally not done. Low confidence asks the user to pick a category; it never silently upgrades to a more expensive model
 - embeddings
 - semantic Todo search
 - RAG over approved project documents
