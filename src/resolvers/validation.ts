@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CATEGORIES } from '../ai/types';
 
 export const TODO_STATUSES = ['todo', 'up_next', 'in_progress', 'done'] as const;
 
@@ -58,6 +59,17 @@ export const updateTodoSchema = z
 export const setTodoStatusSchema = z.strictObject({ id: idSchema, status: statusSchema });
 
 export const deleteTodoSchema = z.strictObject({ id: idSchema });
+
+export const startTaskSchema = z.strictObject({ todoId: idSchema });
+
+export const chooseCategorySchema = z.strictObject({ runId: idSchema, category: z.enum(CATEGORIES) });
+
+export const confirmRunSchema = z.strictObject({
+  runId: idSchema,
+  modelId: z.string().min(1, 'modelId must not be empty').max(100, 'modelId must be at most 100 characters'),
+});
+
+export const getAiRunsSchema = z.strictObject({ todoId: idSchema });
 
 /** Parses a payload; on failure returns a user-safe INVALID_INPUT envelope (no input echoed back). */
 export function parsePayload<S extends z.ZodType>(

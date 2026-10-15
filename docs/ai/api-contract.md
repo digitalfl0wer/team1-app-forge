@@ -101,3 +101,60 @@ Validation: `id` matches `/^\d{1,20}$/`; `description` trimmed 1-255 chars; `not
 - Model output is rendered as plain text. No `dangerouslySetInnerHTML`.
 - AI errors are shown inline on the detail view with a retry; the Todo stays usable.
 - External links use `router.open(url)` from `@forge/bridge`.
+
+## AI resolver shapes (pinned for Wave 3; backend and frontend both build to this)
+
+```ts
+type AiRunStatus =
+  | 'classifying' | 'awaiting_confirmation' | 'running' | 'succeeded' | 'failed'
+  | 'stale' | 'needs_clarification' | 'blocked_by_guard' | 'no_eligible_model';
+
+type AiCandidate = {
+  modelId: string; displayName: string; routingTier: string; score: number;
+  estimatedMaxCostUsd: number | null;       // null = no price at all
+  inputPerMillionUsd: number | null; outputPerMillionUsd: number | null;
+  priceLabel: string;                       // e.g. '$2 in / $10 out per 1M tokens' or 'Last known price (2026-10-15): ...' or 'Price unavailable'
+  contextLength: number | null;
+  capabilities: { structuredOutputs: boolean; tools: boolean; vision: boolean; longContext: boolean };
+  metadataSource: 'live' | 'cache' | 'snapshot';
+  pricingUrl: string;                       // https://openrouter.ai/<model-id>
+  reason: string;
+};
+
+type AiRun = {
+  id: string; todoId: string; status: AiRunStatus; contentVersion: number;
+  category: string | null;                  // detected (or user-chosen) category
+  recommendedModelId: string | null;
+  candidates: AiCandidate[];                // ranked, recommended first
+  cheaperAlternativeModelId: string | null; strongerAlternativeModelId: string | null;
+  reason: string | null;
+  estimatedInputTokens: number | null; outputCapTokens: number | null;
+  confirmedModelId: string | null;
+  response: string | null;                  // plain text, sanitized
+  usage: { promptTokens: number; completionTokens: number } | null;
+  costUsd: number | null;                   // actual, from OpenRouter usage.cost
+  errorCode: string | null; message: string | null;   // user-safe
+  pricingUrls: { general: string; recommendedModel: string | null };
+  createdAt: string; completedAt: string | null;
+};
+```
+
+Return shapes:
+
+| Resolver | Success | Notes |
+|---|---|---|
+| `startTask({ todoId })` | `{ success: true, run: AiRun }` | Persisted outcomes are returned as `success: true` with `run.status` (`awaiting_confirmation`, `needs_clarification`, `blocked_by_guard`, `no_eligible_model`). Errors before a run exists (`INVALID_INPUT`, `NOT_FOUND`, `PROVIDER_ERROR` on classification failure that still persisted a `failed` run is returned as a run) use the failure envelope. Rejects with envelope `INVALID_INPUT` when the Todo already has a run in `classifying`/`running` newer than 2 minutes. |
+| `chooseCategory({ runId, category })` | `{ success: true, run: AiRun }` | Only for `needs_clarification` runs; category must be in the enum; routing then continues with a synthetic classification (confidence 1, reasoningLevel 'medium', text in/out). |
+| `confirmRun({ runId, modelId })` | `{ success: true, run: AiRun }` | Atomic claim: `UPDATE ... SET status='running' WHERE run_id=? AND status='awaiting_confirmation'` and require `affectedRows === 1`, otherwise envelope `INVALID_INPUT` (prevents double execution and double billing). Envelope `NOT_ALLOWED_MODEL` if `modelId` is not in the stored candidates or is no longer approved/enabled; envelope `STALE_CONTENT` (and mark the run `stale`) if the Todo's `content_version` changed. Provider failures after the claim end the run as `failed` (returned as `success: true` with `errorCode`/`message`); the Todo is untouched. |
+| `getAiRuns({ todoId })` | `{ success: true, runs: AiRun[] }` | Newest first. A run stuck in `running`/`classifying` for more than 2 minutes is reported (and persisted) as `failed` with `errorCode: 'TIMEOUT'`. |
+| `getModels()` | `{ success: true, models: ModelsTableRow[], fetchedAt: string \| null, source: 'live'\|'cache'\|'snapshot', error?: string }` | `ModelsTableRow` is the type exported by `src/ai/modelCatalog.ts` (`toModelsTable`). |
+| `refreshModels()` | same as `getModels` | `forceRefresh: true`. |
+
+`ai_state` on the Todo mirrors the latest run: `classifying`, `awaiting_confirmation`, `running`, `succeeded`, `failed`. For outcomes that do not leave a pending action (`needs_clarification`, `blocked_by_guard`, `no_eligible_model`, `stale`) `ai_state` returns to `not_started`; the run row keeps its own status for history.
+
+Behaviour rules:
+- Guard: `unsafe` -> run `blocked_by_guard` (no classification, no worker). Guard `error` is logged and the flow continues.
+- Classifier `needs_clarification` result or router confidence below 0.6 -> run `needs_clarification` with the category list in the UI.
+- When `AI_MOCK=1`, skip every network call (guard, classifier, worker and the live model catalog; use the snapshot).
+- The model catalog cache lives in a SQL table (`ModelCatalogCache`, migration `v007`), not Forge storage (that would need a new scope).
+- Worker execution: system prompt marks the Todo text as untrusted data; `max_completion_tokens` 1500; 20 s timeout; no retries; output passes through `sanitizeModelOutput`; stored as plain text.
