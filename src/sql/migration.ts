@@ -7,9 +7,28 @@ export const CREATE_TODOS_TABLE = `CREATE TABLE IF NOT EXISTS Todos (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`;
 
-const migrations = migrationRunner.enqueue(
-  "v001_create_todos_table",
-  CREATE_TODOS_TABLE,
+// Append-only: never edit an existing migration. Forge runs one statement per enqueue.
+export const MIGRATIONS: ReadonlyArray<readonly [name: string, statement: string]> = [
+  ["v001_create_todos_table", CREATE_TODOS_TABLE],
+  ["v002_todos_add_notes", "ALTER TABLE Todos ADD COLUMN notes TEXT NULL"],
+  [
+    "v003_todos_add_ai_state",
+    "ALTER TABLE Todos ADD COLUMN ai_state VARCHAR(30) NOT NULL DEFAULT 'not_started'",
+  ],
+  [
+    "v004_todos_add_content_version",
+    "ALTER TABLE Todos ADD COLUMN content_version INT NOT NULL DEFAULT 1",
+  ],
+  [
+    "v005_todos_add_updated_at",
+    "ALTER TABLE Todos ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+  ],
+];
+
+// enqueue() mutates and returns the shared runner, so it chains.
+const migrations = MIGRATIONS.reduce(
+  (runner, [name, statement]) => runner.enqueue(name, statement),
+  migrationRunner,
 );
 
 export const runSchemaMigration = async () => {
