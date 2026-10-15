@@ -196,8 +196,8 @@ describe('pricing', () => {
   it('cost math: input x in-price + cap x out-price', () => {
     const r = rec(route(cls(), snapshotEntries(), { estimatedInputTokens: 10_000 }));
     const ds = r.candidates.find((x) => x.modelId === 'deepseek/deepseek-v4.1-flash')!;
-    expect(ds.estimatedMaxCostUsd).toBeCloseTo((10_000 * 0.02376 + 1500 * 0.72) / 1e6, 12);
-    expect(r.outputCapTokens).toBe(1500);
+    expect(ds.estimatedMaxCostUsd).toBeCloseTo((10_000 * 0.02376 + 2500 * 0.72) / 1e6, 12);
+    expect(r.outputCapTokens).toBe(2500);
   });
 
   it('applies the Sol tier above 272k prompt tokens', () => {
@@ -206,7 +206,7 @@ describe('pricing', () => {
     expect(estimateMaxCostUsd(sol, 300_000, 1500)).toBeCloseTo((300_000 * 4 + 1500 * 15) / 1e6, 12);
     const r = rec(route(cls(), snapshotEntries(), { estimatedInputTokens: 300_000 }));
     const c = r.candidates.find((x) => x.modelId === 'openai/gpt-6.1-sol')!;
-    expect(c.estimatedMaxCostUsd).toBeCloseTo((300_000 * 4 + 1500 * 15) / 1e6, 12);
+    expect(c.estimatedMaxCostUsd).toBeCloseTo((300_000 * 4 + 2500 * 15) / 1e6, 12);
   });
 });
 

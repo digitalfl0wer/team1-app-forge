@@ -222,7 +222,7 @@ The V1 classifier is:
 
 This is a normal chat model with structured-output support. Call it through OpenRouter chat completions (not as a decision model) with:
 
-- `temperature: 0`
+- no `temperature` (luna does not support it, and `provider.require_parameters` would reject the request)
 - `max_completion_tokens: 300`
 - `response_format` of type `json_schema` with `strict: true`
 - `provider.require_parameters: true`

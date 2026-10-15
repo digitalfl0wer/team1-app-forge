@@ -5,7 +5,7 @@ export const ROUTING_CONFIG = {
   /** Below this the run ends as needs_clarification. Never escalate to compensate. */
   confidenceThreshold: 0.6,
   /** V1 worker max_completion_tokens. */
-  workerOutputCapTokens: 1500,
+  workerOutputCapTokens: 2500,
   /** Used when the caller does not pass an input token estimate. */
   defaultEstimatedInputTokens: 1000,
   /** needsLongContext requires at least this context window. */

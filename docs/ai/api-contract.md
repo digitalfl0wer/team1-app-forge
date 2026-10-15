@@ -157,4 +157,4 @@ Behaviour rules:
 - Classifier `needs_clarification` result or router confidence below 0.6 -> run `needs_clarification` with the category list in the UI.
 - When `AI_MOCK=1`, skip every network call (guard, classifier, worker and the live model catalog; use the snapshot).
 - The model catalog cache lives in a SQL table (`ModelCatalogCache`, migration `v007`), not Forge storage (that would need a new scope).
-- Worker execution: system prompt marks the Todo text as untrusted data; `max_completion_tokens` 1500; 20 s timeout; no retries; output passes through `sanitizeModelOutput`; stored as plain text.
+- Worker execution: system prompt marks the Todo text as untrusted data; `max_completion_tokens` 2500; 20 s timeout; no retries; output passes through `sanitizeModelOutput`; stored as plain text.

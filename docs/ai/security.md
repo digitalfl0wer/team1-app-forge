@@ -288,7 +288,7 @@ Controls should include:
 - approved model allowlist
 - request timeout (V1: OpenRouter request timeout of 20 s; the Forge resolver limit is 25 s)
 - retry limits (V1: one retry for 429/5xx on classification; none on worker runs, the user can click retry)
-- maximum output size/tokens where applicable (V1: worker `max_completion_tokens` of 1500; classifier 300)
+- maximum output size/tokens where applicable (V1: worker `max_completion_tokens` of 2500; classifier 300)
 - media-generation limits appropriate to the executor (V2)
 - OpenRouter key spending limit/credit controls
 - no silent expensive-model escalation
@@ -298,7 +298,7 @@ Creating, opening, editing, changing status, or deleting a Todo should not trigg
 
 A timeout is a stored run status, never an error that touches the Todo.
 
-The cost shown before confirmation is the worst case: estimated input tokens x input price + 1500 x output price. If live pricing cannot be fetched or parsed, show the **last known price** from the committed registry snapshot, clearly labelled with its date (for example "Last known price (2026-10-15), live price unavailable"), still require explicit confirmation, and show links to check current pricing on OpenRouter: `https://openrouter.ai/models` and `https://openrouter.ai/<model-id>`. Show "Price unavailable" only when no price exists at all (live or snapshot). Never invent a price.
+The cost shown before confirmation is the worst case: estimated input tokens x input price + 2500 x output price. If live pricing cannot be fetched or parsed, show the **last known price** from the committed registry snapshot, clearly labelled with its date (for example "Last known price (2026-10-15), live price unavailable"), still require explicit confirmation, and show links to check current pricing on OpenRouter: `https://openrouter.ai/models` and `https://openrouter.ai/<model-id>`. Show "Price unavailable" only when no price exists at all (live or snapshot). Never invent a price.
 
 ## Data Minimization
 

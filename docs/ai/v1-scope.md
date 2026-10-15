@@ -44,7 +44,7 @@ First V2 task: test whether the Custom UI frame can display `data:` / `blob:` im
 Input: task text (`description`) and `notes` only. No other Todos, no Jira data, no secrets.
 
 1. **Guard check** on the input text.
-2. **Classify** with `openai/gpt-6-luna`: `temperature: 0`, `max_completion_tokens: 300`, `response_format` `json_schema` with `strict: true` and `provider.require_parameters: true`.
+2. **Classify** with `openai/gpt-6-luna`: no `temperature` (luna does not support it; `require_parameters` would reject it), `max_completion_tokens: 300`, `response_format` `json_schema` with `strict: true` and `provider.require_parameters: true`.
 3. The schema contains only enums, booleans and a number: `category`, `subcategory` (enum per category), `requirements[]`, `inputModalities[]`, `outputModality`, `reasoningLevel`, `needsTools`, `needsLongContext`, `confidence`. **No model IDs and no free text**, so prompt injection in a Todo cannot steer anything beyond those enums.
 4. The Todo text is wrapped in delimiters and labelled as untrusted data in the prompt.
 5. **zod validates** the parsed JSON server-side. On failure, retry once; after that the run ends as `needs_clarification`.
@@ -54,10 +54,10 @@ Input: task text (`description`) and `notes` only. No other Todos, no Jira data,
 
 ## Limits
 
-- Worker `max_completion_tokens`: **1500** for V1.
+- Worker `max_completion_tokens`: **2500** for V1.
 - OpenRouter request timeout: **20 s** (Forge resolver limit is 25 s). Timeout is a stored run status, never an error that touches the Todo.
 - Retries: one retry for 429/5xx on classification; none on worker runs (user can click retry).
-- Cost shown before confirm: worst case = estimated input tokens x input price + 1500 x output price. Actual `usage.cost` from OpenRouter is stored after the run.
+- Cost shown before confirm: worst case = estimated input tokens x input price + 2500 x output price. Actual `usage.cost` from OpenRouter is stored after the run.
 
 ## Pricing when live data is unavailable
 

@@ -57,7 +57,7 @@ These need the key, the egress permission and a deploy. Tell the team first: the
 5. `forge install --upgrade -e development` for the Jira site.
 6. Run the migration webtrigger (or wait for the hourly trigger).
 7. For tunnel testing with the real key, export `FORGE_USER_VAR_OPENROUTER_API_KEY` in the tunnel terminal and leave `FORGE_USER_VAR_AI_MOCK` empty.
-8. Try one short real task. Each run costs money; the output cap is 1500 tokens and the timeout is 20 s.
+8. Try one short real task. Each run costs money; the output cap is 2500 tokens and the timeout is 20 s.
 
 A merge to `main` triggers the CI deploy, which stops on the major-version check until the egress change is approved. Hold the `manifest.yml` egress commit back until the team has agreed.
 

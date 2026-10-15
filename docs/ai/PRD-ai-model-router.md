@@ -648,7 +648,7 @@ Therefore:
 - model output is treated as untrusted
 - model output cannot authorize new permissions or arbitrary model IDs
 - user confirmation is enforced server-side
-- requests have token/time/cost guardrails (V1: worker `max_completion_tokens` 1500, OpenRouter request timeout 20 s)
+- requests have token/time/cost guardrails (V1: worker `max_completion_tokens` 2500, OpenRouter request timeout 20 s)
 - AI failure never breaks normal Todo CRUD
 
 See `docs/ai/security.md`.

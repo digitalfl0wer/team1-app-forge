@@ -20,7 +20,7 @@ describe('runWorker', () => {
     expect(r).toEqual({ ok: true, text: 'hello world', usage: { promptTokens: 10, completionTokens: 20 }, costUsd: 0.0012 });
     expect(chat).toHaveBeenCalledTimes(1);
     const opts = chat.mock.calls[0][0];
-    expect(opts).toMatchObject({ model: 'anthropic/claude-sonnet-5.5', maxCompletionTokens: 1500, timeoutMs: 20000, retries: 0 });
+    expect(opts).toMatchObject({ model: 'anthropic/claude-sonnet-5.5', maxCompletionTokens: 2500, timeoutMs: 20000, retries: 0 });
     expect(opts.messages[0]).toEqual({ role: 'system', content: WORKER_SYSTEM_PROMPT });
     expect(WORKER_SYSTEM_PROMPT).toMatch(/untrusted/);
     expect(opts.messages[1].content).toContain('Write a haiku');

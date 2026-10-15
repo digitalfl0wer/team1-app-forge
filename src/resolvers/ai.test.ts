@@ -229,7 +229,7 @@ describe('startTask', () => {
     expect(out.recommendedModelId).toBe(out.candidates[0].modelId);
     expect(out.candidates[0]).toMatchObject({ pricingUrl: expect.stringMatching(/^https:\/\/openrouter\.ai\//) });
     expect(out.candidates[0].priceLabel).toMatch(/per 1M tokens|Price unavailable/);
-    expect(out.outputCapTokens).toBe(1500);
+    expect(out.outputCapTokens).toBe(2500);
     expect(out.estimatedInputTokens).toBeGreaterThan(0);
     expect(out.reason).toBeTruthy();
     expect(out.pricingUrls).toEqual({
