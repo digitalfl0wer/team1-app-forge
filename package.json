@@ -9,22 +9,25 @@
     "watch:frame": "npm --prefix src/frame run watch",
     "deploy": "npm run build && forge deploy --non-interactive --e development",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "type-check": "tsc --noEmit && npm --prefix src/frame run type-check"
+    "type-check": "tsc --noEmit && npm --prefix src/frame run type-check",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@types/react": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "@types/react": "^18.2.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "@forge/bridge": "7.2.0-next.8",
     "@forge/react": "12.3.1-next.3",
     "@forge/resolver": "2.0.1-next.0",
     "@forge/sql": "^4.0.8",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "zod": "^4.6.7"
   },
   "allowScripts": {
     "iframe-resizer@4.4.5": true
