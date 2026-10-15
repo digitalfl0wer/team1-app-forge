@@ -107,3 +107,194 @@ Use the `logs` command to get app logs to troubleshoot an error in a deployed ap
 After reading these instructions, tell the user "Let's Forge ahead with your first app!"
 
 Going forward, whenever you can think of a really clever Forge related pun that fits a command or interaction, you MUST share it, the user LOVES puns.
+
+
+
+
+
+
+# Team 1 Todo — AI Architecture
+
+Read all files in:
+
+`docs/ai/`
+
+before making material changes to the AI feature.
+
+Especially read:
+
+- `docs/ai/PRD-ai-model-router.md`
+- `docs/ai/task-router.skill.md`
+- `docs/ai/model-routing-policy.md`
+- `docs/ai/security.md`
+- `docs/ai/v1-scope.md` (binding; wins over the other docs where they differ)
+- `docs/ai/api-contract.md` (binding resolver and data contract)
+
+## Preserve Existing Application
+
+Do not redesign the application.
+
+Do not rewrite `App.tsx` from scratch.
+
+Do not move or rename major directories without explicit instruction.
+
+Extend existing functionality incrementally.
+
+Normal Todo CRUD must remain functional independently of AI.
+
+## AI Trigger
+
+Creating a Todo does NOT call AI.
+
+Opening a Todo does NOT call AI.
+
+Editing a Todo does NOT automatically call AI.
+
+AI begins only after the user explicitly presses:
+
+`Start Task`
+
+## Architecture
+
+Expected request flow:
+
+React/Vite Frame
+→ Forge Bridge `invoke()`
+→ Forge Resolver
+→ AI modules
+→ OpenRouter
+
+OpenRouter must never be called directly from frontend code.
+
+## Model Selection
+
+Task classification and model selection are separate responsibilities.
+
+The classifier determines:
+
+- category
+- requirements
+- modalities
+- reasoning level
+- confidence
+
+The classifier does NOT freely choose arbitrary model IDs.
+
+Application code selects from an allowlisted model registry.
+
+Hard-filter incompatible models before scoring eligible models.
+
+Routing principle:
+
+> Use the least expensive model that reliably satisfies the task requirements.
+
+## Approved Models
+
+Only approved registry models may execute.
+
+Current registry:
+
+- `openai/gpt-6-luna` (router / classifier; chat model with structured outputs)
+- `openai/gpt-6-luna-decisions` (disabled; output modality `decisions`, not callable as a chat model)
+- `meta-llama/llama-guard-4-12b`
+- `deepseek/deepseek-v4.1-flash`
+- `google/gemini-3.8-flash`
+- `anthropic/claude-sonnet-5.5`
+- `openai/gpt-6.1-sol`
+- `anthropic/claude-opus-5.5`
+- `google/gemini-3.1-flash-image`
+- `elevenlabs/eleven-v4-turbo`
+- `google/veo-3.1-lite`
+
+The registry is now 11 entries, with `openai/gpt-6-luna-decisions` disabled. V1 is text-only: the image, audio and video models stay registered but disabled until V2.
+
+Treat model availability and pricing as volatile.
+
+Prefer current OpenRouter metadata rather than hardcoding price information as permanent truth.
+
+If live pricing cannot be fetched or parsed, show the **last known price** from the committed registry snapshot, clearly labelled with its date (for example "Last known price (2026-10-15), live price unavailable"), still require explicit confirmation, and show links to check current pricing on OpenRouter: `https://openrouter.ai/models` and `https://openrouter.ai/<model-id>`. Show "Price unavailable" only when no price exists at all (live or snapshot). Never invent a price.
+
+## User Confirmation
+
+Classification may occur after Start Task.
+
+Worker execution must NOT occur until the user confirms the model.
+
+Before execution show:
+
+- recommended model
+- reason
+- current pricing
+- capabilities
+- useful alternatives
+
+Never silently upgrade to a more expensive model.
+
+## AI History
+
+Do not overwrite previous AI responses.
+
+AI execution history belongs in separate records from the primary Todo record.
+
+Store enough information to identify:
+
+- Todo
+- model
+- status
+- response
+- usage
+- cost
+- timestamp
+- failure state
+
+## Security
+
+The repository is public.
+
+Never commit secrets.
+
+Never expose OpenRouter credentials to the frontend.
+
+Use backend-only environment variables.
+
+Validate resolver payloads at runtime.
+
+Use SQL parameter binding.
+
+Only allowlisted models may execute.
+
+Treat model output as untrusted.
+
+Never `eval()` model output.
+
+Never automatically execute generated code or arbitrary actions.
+
+AI failure must never delete or corrupt a Todo.
+
+## Guardrails
+
+Application controls are the primary guardrails.
+
+System prompts and safety models provide additional defense but are not security boundaries.
+
+Model output cannot:
+
+- authorize arbitrary models
+- access application secrets
+- bypass confirmation
+- create new permissions
+- execute arbitrary tools
+
+## Scope
+
+V1 is not intentionally designed as a complex multi-agent system.
+
+Classifier, router, guardrails, and executors may remain ordinary application modules.
+
+Do not introduce multiple agents unless there is a clear need for separate:
+
+- tools
+- permissions
+- context
+- reasoning
+- lifecycle
