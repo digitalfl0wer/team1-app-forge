@@ -1,12 +1,6 @@
 import Resolver from '@forge/resolver';
-import { sql, type UpdateQueryResponse } from '@forge/sql';
-
-type Todo = {
-  id: string;
-  description: string;
-  status: string;
-  created_at: string;
-};
+import { chooseCategory, confirmRun, getAiRuns, getModels, refreshModels, startTask } from './ai';
+import { addTodo, deleteTodo, getTodo, getTodos, setTodoStatus, updateTodo } from './todos';
 
 const resolver = new Resolver();
 
@@ -14,43 +8,17 @@ resolver.define('getText', () => {
   return 'Hello, world!';
 });
 
-resolver.define('addTodo', async ({ payload }) => {
-  const { description } = payload as { description: string };
-
-  const result = await sql
-    .prepare<UpdateQueryResponse>('INSERT INTO Todos (description) VALUES (?)')
-    .bindParams(description)
-    .execute();
-
-  return { success: result.rows.affectedRows === 1 };
-});
-
-// todo_id is an AUTO_RANDOM BIGINT that can exceed JS's safe integer range, so it travels as a string.
-resolver.define('getTodo', async ({ payload }) => {
-  const { id } = payload as { id: string };
-
-  const result = await sql
-    .prepare<Todo>(
-      `SELECT CAST(todo_id AS CHAR) AS id, description, status, created_at
-       FROM Todos
-       WHERE todo_id = CAST(? AS SIGNED)`
-    )
-    .bindParams(id)
-    .execute();
-
-  return result.rows[0] ?? null;
-});
-
-resolver.define('getTodos', async () => {
-  const result = await sql
-    .prepare<Todo>(
-      `SELECT CAST(todo_id AS CHAR) AS id, description, status, created_at
-       FROM Todos
-       ORDER BY created_at DESC`
-    )
-    .execute();
-
-  return result.rows;
-});
+resolver.define('addTodo', ({ payload }) => addTodo(payload));
+resolver.define('getTodo', ({ payload }) => getTodo(payload));
+resolver.define('getTodos', () => getTodos());
+resolver.define('updateTodo', ({ payload }) => updateTodo(payload));
+resolver.define('setTodoStatus', ({ payload }) => setTodoStatus(payload));
+resolver.define('deleteTodo', ({ payload }) => deleteTodo(payload));
+resolver.define('startTask', ({ payload }) => startTask(payload));
+resolver.define('chooseCategory', ({ payload }) => chooseCategory(payload));
+resolver.define('confirmRun', ({ payload }) => confirmRun(payload));
+resolver.define('getAiRuns', ({ payload }) => getAiRuns(payload));
+resolver.define('getModels', () => getModels());
+resolver.define('refreshModels', () => refreshModels());
 
 export const handler = resolver.getDefinitions();

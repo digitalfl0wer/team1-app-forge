@@ -24,7 +24,8 @@
     "src/frontend/**/*",
     "src/resolvers/**/*",
     "src/index.ts",
-    "src/sql/**/*"
+    "src/sql/**/*",
+    "src/ai/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

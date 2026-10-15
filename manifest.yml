@@ -32,6 +32,10 @@ resources:
   - key: icons
     path: icons
 permissions:
+  external:
+    fetch:
+      backend:
+        - address: 'openrouter.ai'
   content:
     styles:
       - "unsafe-inline"

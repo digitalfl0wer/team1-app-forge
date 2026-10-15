@@ -2,18 +2,30 @@ import React, {
     FormEvent,
     useCallback,
     useEffect,
+    useRef,
     useState,
 } from 'react';
 
-import { invoke, view } from '@forge/bridge';
+import { view } from '@forge/bridge';
+import * as api from './api';
+import { errorMessage, isDatabaseUpdating } from './api';
+import AiPanel from './components/AiPanel';
+import ModelsTab from './components/ModelsTab';
+import StatusFilter from './components/StatusFilter';
+import TodoDetail from './components/TodoDetail';
+import TodoRow from './components/TodoRow';
+import {
+    countByStatus,
+    filterLabel,
+    filterTodos,
+    removeTodo,
+    replaceTodo,
+    validateDescription,
+    type StatusFilter as Filter,
+    type Todo,
+    type TodoStatus,
+} from './todoView';
 import './App.css';
-
-type Todo = {
-    id: string;
-    description: string;
-    status: string;
-    created_at: string;
-};
 
 const App: React.FC = () => {
     const [todos, setTodos] = useState<Todo[]>([]);
@@ -21,23 +33,48 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
     const [error, setError] = useState('');
+    const [filter, setFilter] = useState<Filter>('all');
+    const [selected, setSelected] = useState<{ id: string; edit: boolean } | null>(null);
+    // Set when the backend says the database is still updating: writes stay disabled, reads keep working.
+    const [readOnly, setReadOnly] = useState(false);
+    const lastOpenedId = useRef<string | null>(null);
+    const [tab, setTab] = useState<'todos' | 'models'>('todos');
+    // Models load on first open and stay mounted afterwards so switching back is instant.
+    const [modelsOpened, setModelsOpened] = useState(false);
+    const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+    const switchTab = (next: 'todos' | 'models', focus = false) => {
+        setTab(next);
+        if (next === 'models') setModelsOpened(true);
+        if (focus) tabRefs.current[next]?.focus();
+    };
+
+    const onTabKeyDown = (event: React.KeyboardEvent) => {
+        const order: Array<'todos' | 'models'> = ['todos', 'models'];
+        const i = order.indexOf(tab);
+        let next: 'todos' | 'models' | null = null;
+        if (event.key === 'ArrowRight') next = order[(i + 1) % 2];
+        else if (event.key === 'ArrowLeft') next = order[(i + 1) % 2];
+        else if (event.key === 'Home') next = 'todos';
+        else if (event.key === 'End') next = 'models';
+        if (next) {
+            event.preventDefault();
+            switchTab(next, true);
+        }
+    };
 
     // invoke crosses the Frame boundary to Alan's backend; SQL stays on Forge.
-    const loadTodos = useCallback(async () => {
+    // `silent` reloads after writes without swapping the list for a loading message.
+    const loadTodos = useCallback(async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             setError('');
 
-            const result = await invoke<Todo[]>('getTodos');
-            // Bridge types also allow responses with metadata. These resolvers
-            // return plain data, so check that shape before updating React state.
-            if (!Array.isArray(result)) {
-                throw new Error('Unexpected Todo list response.');
-            }
-            setTodos(result);
+            // api.getTodos validates the response shape before it reaches React state.
+            setTodos(await api.getTodos());
         } catch (err) {
             console.error(err);
-            setError('Could not load todos.');
+            setError(silent ? 'Saved, but the list could not be refreshed. Use Refresh.' : errorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -49,12 +86,16 @@ const App: React.FC = () => {
         void loadTodos();
     }, [loadTodos]);
 
+    const noteWriteFailure = (err: unknown) => {
+        if (isDatabaseUpdating(err) && /updating/i.test(errorMessage(err))) setReadOnly(true);
+    };
+
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
 
         const trimmedDescription = description.trim();
 
-        if (adding || loading || !trimmedDescription || trimmedDescription.length > 255) {
+        if (adding || loading || readOnly || validateDescription(description) !== null) {
             return;
         }
 
@@ -62,23 +103,81 @@ const App: React.FC = () => {
             setAdding(true);
             setError('');
 
-            const result = await invoke<{ success: boolean }>('addTodo', {
-                description: trimmedDescription,
-            });
-
-            if (!result || !('success' in result) || !result.success) {
-                throw new Error('Todo was not created.');
-            }
+            await api.addTodo(trimmedDescription);
 
             setDescription('');
-            await loadTodos();
+            await loadTodos(true);
         } catch (err) {
-            console.error(err);
-            setError('Could not add todo.');
+            noteWriteFailure(err);
+            setError(errorMessage(err));
         } finally {
             setAdding(false);
         }
     };
+
+    // Row and detail actions: update local state from the response, reload, rethrow failures
+    // so the calling component shows the message inline next to the control that failed.
+    const afterWrite = async (apply: () => void) => {
+        apply();
+        await loadTodos(true);
+    };
+
+    const handleSetStatus = async (id: string, status: TodoStatus) => {
+        try {
+            const todo = await api.setTodoStatus(id, status);
+            await afterWrite(() => setTodos((current) => replaceTodo(current, todo)));
+        } catch (err) {
+            noteWriteFailure(err);
+            throw err;
+        }
+    };
+
+    const handleSave = async (id: string, fields: { description?: string; notes?: string }) => {
+        try {
+            const todo = await api.updateTodo(id, fields);
+            await afterWrite(() => setTodos((current) => replaceTodo(current, todo)));
+        } catch (err) {
+            noteWriteFailure(err);
+            throw err;
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        try {
+            await api.deleteTodo(id);
+            setSelected(null);
+            await afterWrite(() => setTodos((current) => removeTodo(current, id)));
+        } catch (err) {
+            noteWriteFailure(err);
+            throw err;
+        }
+    };
+
+    const openTodo = (id: string, edit: boolean) => {
+        lastOpenedId.current = id;
+        setSelected({ id, edit });
+    };
+
+    const closeDetail = () => setSelected(null);
+
+    // Return focus to the task that was open when going back to the list.
+    useEffect(() => {
+        if (selected === null && lastOpenedId.current !== null) {
+            const id = lastOpenedId.current;
+            lastOpenedId.current = null;
+            const buttons = document.querySelectorAll<HTMLElement>('[data-todo-open]');
+            for (let i = 0; i < buttons.length; i += 1) {
+                if (buttons[i].getAttribute('data-todo-open') === id) {
+                    buttons[i].focus();
+                    break;
+                }
+            }
+        }
+    }, [selected]);
+
+    const counts = countByStatus(todos);
+    const visibleTodos = filterTodos(todos, filter);
+    const selectedTodo = selected ? todos.find((todo) => todo.id === selected.id) ?? null : null;
 
     return (
         <main className="todo-app">
@@ -91,76 +190,153 @@ const App: React.FC = () => {
                 <button
                     className="secondary-button"
                     type="button"
-                    onClick={() => void loadTodos()}
+                    onClick={() => {
+                        setReadOnly(false);
+                        void loadTodos();
+                    }}
                     disabled={loading || adding}
                 >
                     Refresh
                 </button>
             </header>
 
-            <label htmlFor="todo-description">Todo description</label>
-            <form className="add-todo" onSubmit={handleSubmit}>
-                <input
-                    id="todo-description"
-                    disabled={adding}
-                    required
-                    type="text"
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                    placeholder="What needs to be done?"
-                    maxLength={255}
-                />
-
-                <button
-                    className="primary-button"
-                    type="submit"
-                    disabled={adding || loading || !description.trim()}
-                >
-                    {adding ? 'Adding...' : 'Add Todo'}
-                </button>
-            </form>
-
-            {error && (
-                <p className="error-message" role="alert">
-                    {error}
+            {readOnly && (
+                <p className="error-message" role="status">
+                    Changes are paused while the app updates its database. You can still read your
+                    todos. Use Refresh to try again.
                 </p>
             )}
 
-            <section className="todo-section" aria-busy={loading} aria-live="polite">
-                <div className="section-heading">
-                    <h2>Todos</h2>
-                    <span>{todos.length} total</span>
+            <div className="tab-bar" role="tablist" aria-label="Sections" onKeyDown={onTabKeyDown}>
+                {(['todos', 'models'] as const).map((id) => (
+                    <button
+                        key={id}
+                        ref={(el) => {
+                            tabRefs.current[id] = el;
+                        }}
+                        type="button"
+                        role="tab"
+                        id={`tab-${id}`}
+                        aria-selected={tab === id}
+                        aria-controls={`panel-${id}`}
+                        tabIndex={tab === id ? 0 : -1}
+                        className={`tab-button${tab === id ? ' tab-active' : ''}`}
+                        onClick={() => switchTab(id)}
+                    >
+                        {id === 'todos' ? 'Todos' : 'Models'}
+                    </button>
+                ))}
+            </div>
+
+            {modelsOpened && (
+                <div role="tabpanel" id="panel-models" aria-labelledby="tab-models" hidden={tab !== 'models'}>
+                    <ModelsTab />
                 </div>
+            )}
 
-                {loading ? (
-                    <p>Loading todos...</p>
-                ) : error && todos.length === 0 ? (
-                    <p>Use Refresh to try loading your todos again.</p>
-                ) : todos.length === 0 ? (
-                    <div className="empty-state">
-                        <h3>No todos yet</h3>
-                        <p>Add your first task above.</p>
-                    </div>
-                ) : (
-                    <div className="todo-list">
-                        {todos.map((todo) => (
-                            <article className="todo-item" key={todo.id}>
-                                <div className="todo-content">
-                                    <p>{todo.description}</p>
+            <div role="tabpanel" id="panel-todos" aria-labelledby="tab-todos" hidden={tab !== 'todos'}>
+            {selected ? (
+                <>
+                    {error && (
+                        <p className="error-message" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    {selectedTodo ? (
+                        <TodoDetail
+                            key={selectedTodo.id}
+                            todo={selectedTodo}
+                            readOnly={readOnly}
+                            startEditing={selected.edit}
+                            onBack={closeDetail}
+                            onSetStatus={handleSetStatus}
+                            onSave={handleSave}
+                            onDelete={handleDelete}
+                        >
+                            <AiPanel todo={selectedTodo} readOnly={readOnly} />
+                        </TodoDetail>
+                    ) : loading ? (
+                        <p>Loading todo...</p>
+                    ) : (
+                        <div className="empty-state">
+                            <h3>Todo not found</h3>
+                            <p>It may have been deleted.</p>
+                            <button type="button" className="secondary-button" onClick={closeDetail}>
+                                Back to list
+                            </button>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <>
+                    <label htmlFor="todo-description">Todo description</label>
+                    <form className="add-todo" onSubmit={handleSubmit}>
+                        <input
+                            id="todo-description"
+                            disabled={adding || readOnly}
+                            required
+                            type="text"
+                            value={description}
+                            onChange={(event) => setDescription(event.target.value)}
+                            placeholder="What needs to be done?"
+                            maxLength={255}
+                        />
 
-                                    <span className={`status status-${todo.status}`}>
-                    {todo.status}
-                  </span>
-                                </div>
+                        <button
+                            className="primary-button"
+                            type="submit"
+                            disabled={adding || loading || readOnly || !description.trim()}
+                        >
+                            {adding ? 'Adding...' : 'Add Todo'}
+                        </button>
+                    </form>
 
-                                <small>
-                                    Created {new Date(todo.created_at).toLocaleString()}
-                                </small>
-                            </article>
-                        ))}
-                    </div>
-                )}
-            </section>
+                    {error && (
+                        <p className="error-message" role="alert">
+                            {error}
+                        </p>
+                    )}
+
+                    <section className="todo-section" aria-busy={loading} aria-live="polite">
+                        <div className="section-heading">
+                            <h2>Todos</h2>
+                            <span>{counts.all} total</span>
+                        </div>
+
+                        <StatusFilter value={filter} counts={counts} onChange={setFilter} />
+
+                        {loading ? (
+                            <p>Loading todos...</p>
+                        ) : error && todos.length === 0 ? (
+                            <p>Use Refresh to try loading your todos again.</p>
+                        ) : todos.length === 0 ? (
+                            <div className="empty-state">
+                                <h3>No todos yet</h3>
+                                <p>Add your first task above.</p>
+                            </div>
+                        ) : visibleTodos.length === 0 ? (
+                            <div className="empty-state">
+                                <h3>Nothing in {filterLabel(filter)}</h3>
+                                <p>Choose another filter to see more tasks.</p>
+                            </div>
+                        ) : (
+                            <div className="todo-list">
+                                {visibleTodos.map((todo) => (
+                                    <TodoRow
+                                        key={todo.id}
+                                        todo={todo}
+                                        readOnly={readOnly}
+                                        onOpen={openTodo}
+                                        onSetStatus={handleSetStatus}
+                                        onDelete={handleDelete}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                </>
+            )}
+            </div>
         </main>
     );
 };
