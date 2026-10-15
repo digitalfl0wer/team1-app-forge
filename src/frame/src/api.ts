@@ -1,5 +1,7 @@
 import { invoke } from '@forge/bridge';
 import { isTodoStatus, type Todo, type TodoStatus } from './todoView';
+import { parseModels, parseRun, parseRuns } from './aiParse';
+import type { AiRun, ModelsResult } from './aiTypes';
 
 export type { Todo, TodoStatus } from './todoView';
 
@@ -116,4 +118,45 @@ export async function setTodoStatus(id: string, status: TodoStatus): Promise<Tod
 
 export async function deleteTodo(id: string): Promise<void> {
     unwrap(await call('deleteTodo', { id }));
+}
+
+// AI resolvers. Shapes are pinned in docs/ai/api-contract.md.
+const badShape = () => new ApiError('INTERNAL', GENERIC_MESSAGE);
+
+function runFrom(result: unknown): AiRun {
+    const run = parseRun(unwrap(result).run);
+    if (!run) throw badShape();
+    return run;
+}
+
+export async function startTask(todoId: string): Promise<AiRun> {
+    return runFrom(await call('startTask', { todoId }));
+}
+
+export async function chooseCategory(runId: string, category: string): Promise<AiRun> {
+    return runFrom(await call('chooseCategory', { runId, category }));
+}
+
+export async function confirmRun(runId: string, modelId: string): Promise<AiRun> {
+    return runFrom(await call('confirmRun', { runId, modelId }));
+}
+
+export async function getAiRuns(todoId: string): Promise<AiRun[]> {
+    const runs = parseRuns(unwrap(await call('getAiRuns', { todoId })).runs);
+    if (!runs) throw badShape();
+    return runs;
+}
+
+function modelsFrom(result: unknown): ModelsResult {
+    const models = parseModels(unwrap(result));
+    if (!models) throw badShape();
+    return models;
+}
+
+export async function getModels(): Promise<ModelsResult> {
+    return modelsFrom(await call('getModels'));
+}
+
+export async function refreshModels(): Promise<ModelsResult> {
+    return modelsFrom(await call('refreshModels'));
 }

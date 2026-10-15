@@ -9,6 +9,8 @@ import React, {
 import { view } from '@forge/bridge';
 import * as api from './api';
 import { errorMessage, isDatabaseUpdating } from './api';
+import AiPanel from './components/AiPanel';
+import ModelsTab from './components/ModelsTab';
 import StatusFilter from './components/StatusFilter';
 import TodoDetail from './components/TodoDetail';
 import TodoRow from './components/TodoRow';
@@ -36,6 +38,30 @@ const App: React.FC = () => {
     // Set when the backend says the database is still updating: writes stay disabled, reads keep working.
     const [readOnly, setReadOnly] = useState(false);
     const lastOpenedId = useRef<string | null>(null);
+    const [tab, setTab] = useState<'todos' | 'models'>('todos');
+    // Models load on first open and stay mounted afterwards so switching back is instant.
+    const [modelsOpened, setModelsOpened] = useState(false);
+    const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+    const switchTab = (next: 'todos' | 'models', focus = false) => {
+        setTab(next);
+        if (next === 'models') setModelsOpened(true);
+        if (focus) tabRefs.current[next]?.focus();
+    };
+
+    const onTabKeyDown = (event: React.KeyboardEvent) => {
+        const order: Array<'todos' | 'models'> = ['todos', 'models'];
+        const i = order.indexOf(tab);
+        let next: 'todos' | 'models' | null = null;
+        if (event.key === 'ArrowRight') next = order[(i + 1) % 2];
+        else if (event.key === 'ArrowLeft') next = order[(i + 1) % 2];
+        else if (event.key === 'Home') next = 'todos';
+        else if (event.key === 'End') next = 'models';
+        if (next) {
+            event.preventDefault();
+            switchTab(next, true);
+        }
+    };
 
     // invoke crosses the Frame boundary to Alan's backend; SQL stays on Forge.
     // `silent` reloads after writes without swapping the list for a loading message.
@@ -181,6 +207,34 @@ const App: React.FC = () => {
                 </p>
             )}
 
+            <div className="tab-bar" role="tablist" aria-label="Sections" onKeyDown={onTabKeyDown}>
+                {(['todos', 'models'] as const).map((id) => (
+                    <button
+                        key={id}
+                        ref={(el) => {
+                            tabRefs.current[id] = el;
+                        }}
+                        type="button"
+                        role="tab"
+                        id={`tab-${id}`}
+                        aria-selected={tab === id}
+                        aria-controls={`panel-${id}`}
+                        tabIndex={tab === id ? 0 : -1}
+                        className={`tab-button${tab === id ? ' tab-active' : ''}`}
+                        onClick={() => switchTab(id)}
+                    >
+                        {id === 'todos' ? 'Todos' : 'Models'}
+                    </button>
+                ))}
+            </div>
+
+            {modelsOpened && (
+                <div role="tabpanel" id="panel-models" aria-labelledby="tab-models" hidden={tab !== 'models'}>
+                    <ModelsTab />
+                </div>
+            )}
+
+            <div role="tabpanel" id="panel-todos" aria-labelledby="tab-todos" hidden={tab !== 'todos'}>
             {selected ? (
                 <>
                     {error && (
@@ -198,7 +252,9 @@ const App: React.FC = () => {
                             onSetStatus={handleSetStatus}
                             onSave={handleSave}
                             onDelete={handleDelete}
-                        />
+                        >
+                            <AiPanel todo={selectedTodo} readOnly={readOnly} />
+                        </TodoDetail>
                     ) : loading ? (
                         <p>Loading todo...</p>
                     ) : (
@@ -280,6 +336,7 @@ const App: React.FC = () => {
                     </section>
                 </>
             )}
+            </div>
         </main>
     );
 };
