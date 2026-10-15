@@ -69,7 +69,7 @@ const REGISTRY: readonly RegistryModel[] = [
   {
     id: 'openai/gpt-6-luna-decisions',
     displayName: 'GPT-6 Luna Decisions',
-    role: 'Router (decisions API)',
+    role: 'Router (disabled; not a chat model)',
     executorType: 'router',
     approved: true,
     enabled: false,
@@ -82,7 +82,7 @@ const REGISTRY: readonly RegistryModel[] = [
       "Registered but disabled: OpenRouter lists output modality 'decisions' and no chat parameters, so it is not callable as a chat model.",
     snapshot: snap('openai/gpt-6-luna-decisions', {
       pricing: null,
-      pricingUnitNote: 'Decisions API pricing not captured in the snapshot.',
+      pricingUnitNote: 'Not callable as a chat model; pricing not captured.',
       contextLength: null,
       inputModalities: ['text'],
       outputModalities: ['decisions'],

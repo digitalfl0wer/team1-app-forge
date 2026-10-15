@@ -10,7 +10,8 @@
     "deploy": "npm run build && forge deploy --non-interactive --e development",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "type-check": "tsc --noEmit && npm --prefix src/frame run type-check",
-    "test": "vitest run"
+    "test": "vitest run",
+    "models:table": "rolldown scripts/generate-model-table.ts --platform node --format cjs --external @forge/api -o node_modules/.cache/forge-models/gen.cjs && node node_modules/.cache/forge-models/gen.cjs"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
@@ -22,6 +23,7 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@forge/api": "^8.3.0",
     "@forge/bridge": "7.2.0-next.8",
     "@forge/react": "12.3.1-next.3",
     "@forge/resolver": "2.0.1-next.0",
